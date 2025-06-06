@@ -13,7 +13,7 @@
 ![Vehicle Count by Weather](vehicle_count_by_weather.png)
 
 ### Vehicle Count by Temperature
-![Vehicle Count by Temperature](vehicle_count_by_temp.png)
+![Vehicle Count by Temperature](vehicle_count_by_temperature.png)
 
 ### Vehicle Updates by Hour of Day
 ![Vehicle Updates by Hour](vehicle_updates_by_hour.png)
