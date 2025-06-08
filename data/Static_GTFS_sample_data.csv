@@ -1,0 +1,11 @@
+stop_id,stop_code,stop_name,tts_stop_name,stop_desc,stop_lat,stop_lon,zone_id,stop_url,location_type,parent_station,stop_timezone,wheelchair_boarding,location,ingestion_ts
+100,100,1st Ave & Spring St,1st Avenue and Spring St,null,47.6051369,-122.336533,21,null,0,null,America/Los_Angeles,1,"{""stop_lat"":47.6051369,""stop_lon"":-122.336533}",2025-06-07T06:25:50.73Z
+101,101,Spring St & 3rd Ave,Spring Street and Third Ave,null,47.6061363,-122.334969,21,null,0,null,America/Los_Angeles,1,"{""stop_lat"":47.6061363,""stop_lon"":-122.334969}",2025-06-07T06:25:50.73Z
+102,102,Spring St & 4th Ave,Spring Street and Fourth Ave,null,47.6069107,-122.333092,21,null,0,null,America/Los_Angeles,1,"{""stop_lat"":47.6069107,""stop_lon"":-122.333092}",2025-06-07T06:25:50.73Z
+103,103,Spring St & 8th Ave,Spring Street and Eighth Ave,null,47.6085281,-122.329239,1,null,0,null,America/Los_Angeles,1,"{""stop_lat"":47.6085281,""stop_lon"":-122.329239}",2025-06-07T06:25:50.73Z
+104,104,Madison St & Terry Ave,Madison Street and Terry Ave,null,47.6089478,-122.325897,1,null,0,null,America/Los_Angeles,1,"{""stop_lat"":47.6089478,""stop_lon"":-122.325897}",2025-06-07T06:25:50.73Z
+105,105,Madison St & Boylston Ave,Madison Street and Boylston Ave,null,47.6103554,-122.322517,1,null,0,null,America/Los_Angeles,1,"{""stop_lat"":47.6103554,""stop_lon"":-122.322517}",2025-06-07T06:25:50.73Z
+106,106,E Madison St & 12th Ave,East Madison Street and 12th Ave,null,47.6131248,-122.31588,1,null,0,null,America/Los_Angeles,1,"{""stop_lat"":47.6131248,""stop_lon"":-122.31588}",2025-06-07T06:25:50.73Z
+107,107,E Madison St & 17th Ave,East Madison Street and 17th Ave,null,47.615696,-122.309723,1,null,0,null,America/Los_Angeles,1,"{""stop_lat"":47.615696,""stop_lon"":-122.309723}",2025-06-07T06:25:50.73Z
+108,108,E Madison St & 22nd Ave E,East Madison Street and 22nd Avenue East,null,47.6181297,-122.30394,1,null,0,null,America/Los_Angeles,1,"{""stop_lat"":47.6181297,""stop_lon"":-122.30394}",2025-06-07T06:25:50.73Z
+109,109,E Madison St & 24th Ave E,East Madison Street and 24th Avenue East,null,47.6205368,-122.300407,1,null,0,null,America/Los_Angeles,1,"{""stop_lat"":47.6205368,""stop_lon"":-122.300407}",2025-06-07T06:25:50.73Z
