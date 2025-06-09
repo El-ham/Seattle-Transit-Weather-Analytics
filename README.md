@@ -11,8 +11,8 @@ This project ingests real-time and static GTFS transit feeds and enriches them w
 ---
 
 ## Tech Stack
-- **Databricks** (hosted on Community Edition)
-- **Apache Spark / PySpark**
+- **Databricks**
+- **PySpark**
 - **Delta Lake** for table versioning and partitioning
 - **NOAA API** (National Weather Service)
 - **GTFS Feeds** (King County Metro)
@@ -48,18 +48,18 @@ README.md                # This file
 ## Pipeline Architecture
 ```
             ┌─────────────────────┐
-            │  GTFS-Static (once) │◄──────────────┐
-            └─────────────────────┘               │
-                       ▼                          │
-     ┌────────────────────────────┐               │
-     │  Real-Time GTFS Feed (RT)  │               │
-     └────────────────────────────┘               │
-                       ▼                          │
-        ┌────────────────────────────┐            │
-        │  Bronze → Silver → Gold     │◄─────┐     │
-        │  (Delta Lake Transform)     │      │     │
-        └────────────────────────────┘      │     │
-                       ▼                   │     │
+            │  GTFS-Static (once) │◄────────────┐
+            └─────────────────────┘             │
+                       ▼                        │
+     ┌────────────────────────────┐             │
+     │  Real-Time GTFS Feed (RT)  │             │
+     └────────────────────────────┘             │
+                       ▼                        │
+        ┌────────────────────────────┐          │
+        │  Bronze → Silver → Gold    │◄───┐     │
+        │  (Delta Lake Transform)    │    │     │
+        └────────────────────────────┘    │     │
+                       ▼                  │     │
               ┌────────────────┐          │     │
               │ NOAA Hourly API│──────────┘     │
               └────────────────┘                │
