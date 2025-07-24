@@ -1,0 +1,11 @@
+route_id,agency_id,route_short_name,route_long_name,route_desc,route_type,route_url,route_color,route_text_color,ingestion_ts
+100001,1,1,null,Kinnear - Downtown Seattle,3,https://kingcounty.gov/en/dept/metro/routes-and-service/schedules-and-maps/001.html,FDB71A,000000,2025-06-07T06:25:53.873Z
+100002,1,10,null,Capitol Hill - Downtown Seattle,3,https://kingcounty.gov/en/dept/metro/routes-and-service/schedules-and-maps/010.html,FDB71A,000000,2025-06-07T06:25:53.873Z
+100003,1,101,null,Renton Transit Center - Downtown Seattle,3,https://kingcounty.gov/en/dept/metro/routes-and-service/schedules-and-maps/101.html,FDB71A,000000,2025-06-07T06:25:53.873Z
+100004,1,105,null,Renton Highlands - Renton Transit Center,3,https://kingcounty.gov/en/dept/metro/routes-and-service/schedules-and-maps/105.html,FDB71A,000000,2025-06-07T06:25:53.873Z
+100005,1,106,null,Renton Transit Center - Skyway - Downtown Seattle,3,https://kingcounty.gov/en/dept/metro/routes-and-service/schedules-and-maps/106.html,FDB71A,000000,2025-06-07T06:25:53.873Z
+100006,1,107,null,Renton Transit Center - Rainier Beach,3,https://kingcounty.gov/en/dept/metro/routes-and-service/schedules-and-maps/107.html,FDB71A,000000,2025-06-07T06:25:53.873Z
+100009,1,11,null,Madison Park - Capitol Hill - Downtown Seattle,3,https://kingcounty.gov/en/dept/metro/routes-and-service/schedules-and-maps/011.html,FDB71A,000000,2025-06-07T06:25:53.873Z
+100011,1,111,null,Lake Kathleen - Downtown Seattle,3,https://kingcounty.gov/en/dept/metro/routes-and-service/schedules-and-maps/111.html,FDB71A,000000,2025-06-07T06:25:53.873Z
+100012,1,113,null,Shorewood - Downtown Seattle,3,https://kingcounty.gov/en/dept/metro/routes-and-service/schedules-and-maps/113.html,FDB71A,000000,2025-06-07T06:25:53.873Z
+100016,1,118,null,Tahlequah - Vashon - Downtown Seattle,3,https://kingcounty.gov/en/dept/metro/routes-and-service/schedules-and-maps/118.html,FDB71A,000000,2025-06-07T06:25:53.873Z

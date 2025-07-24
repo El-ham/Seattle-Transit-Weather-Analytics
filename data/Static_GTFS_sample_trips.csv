@@ -1,0 +1,11 @@
+route_id,service_id,trip_id,trip_headsign,tts_trip_headsign,trip_short_name,direction_id,block_id,shape_id,peak_flag,fare_id,wheelchair_accessible,bikes_allowed,ingestion_ts
+100133,86832,347468088,Bellevue Transit Center,bellevue transit center,null,0,7633168,11240002,0,101,1,1,2025-06-07T06:25:55.795Z
+102548,23519,347619778,Bellevue Transit Center Crossroads,bellevue transit center crossroads,null,1,7633564,30672005,0,101,1,1,2025-06-07T06:25:55.795Z
+102548,23519,347619868,Bellevue Transit Center Crossroads,bellevue transit center crossroads,null,1,7633565,30672005,0,101,1,1,2025-06-07T06:25:55.795Z
+102548,23519,347619998,Bellevue Transit Center Crossroads,bellevue transit center crossroads,null,1,7633576,30672005,0,101,1,1,2025-06-07T06:25:55.795Z
+102548,23519,347620378,Bellevue Transit Center Crossroads,bellevue transit center crossroads,null,1,7633578,30672005,0,101,1,1,2025-06-07T06:25:55.795Z
+102548,23519,347620408,Bellevue Transit Center Crossroads,bellevue transit center crossroads,null,1,7633577,30672005,0,101,1,1,2025-06-07T06:25:55.795Z
+102548,23519,347620918,Bellevue Transit Center Crossroads,bellevue transit center crossroads,null,1,7633575,30672005,0,101,1,1,2025-06-07T06:25:55.795Z
+102548,23519,347621038,Bellevue Transit Center Crossroads,bellevue transit center crossroads,null,1,7633566,30672005,0,101,1,1,2025-06-07T06:25:55.795Z
+100236,17361,347630538,Downtown Seattle,Downtown Seattle,null,1,7633262,30545007,0,501,1,1,2025-06-07T06:25:55.795Z
+100236,17361,347630788,Downtown Seattle,Downtown Seattle,null,1,7633260,30545007,0,501,1,1,2025-06-07T06:25:55.795Z

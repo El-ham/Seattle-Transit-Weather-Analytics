@@ -1,7 +1,7 @@
 
 # Seattle Transit & Weather Analytics Platform
 
-A full data engineering pipeline that integrates Seattle's public transit (GTFS) data with local hourly weather forecasts to analyze how weather conditions impact transportation activity. Built using PySpark, Databricks, Delta Lake, and visualized through Databricks SQL Dashboards.
+A full data engineering pipeline that integrates Seattle's public transit (GTFS) data with local hourly weather forecasts from NOAA to analyze how weather conditions impact transportation activity. Built using PySpark, Databricks, Delta Lake, and visualized through Databricks SQL Dashboards.
 
 ---
 
@@ -11,7 +11,7 @@ This project ingests real-time and static GTFS transit feeds and enriches them w
 ---
 
 ## Tech Stack
-- **Databricks**
+- **Databricks** (notebooks, job scheduling, dashboards)
 - **PySpark**
 - **Delta Lake** for table versioning and partitioning
 - **NOAA API** (National Weather Service)
@@ -38,7 +38,17 @@ This project ingests real-time and static GTFS transit feeds and enriches them w
     ├── 01_ingest_gtfs_static.ipynb
     ├── 02_ingest_gtfs_rt.ipynb
     ├── 03_transform_gtfs_rt.ipynb
-    ├── ...
+    ├── 04_enrich_rt_with_static.ipynb
+    ├── 05_ingest_nws_weather.ipynb
+    ├── 06_transform_nws_weather.ipynb
+    ├── 07_join_rt_with_weather.ipynb
+    ├── 10_transform_gtfs_static.ipynb
+    ├── 13_platinum_static.ipynb
+    ├── 14_create_platinum.ipynb
+    ├── 96_one_time_dedupe.ipynb
+    ├── 97_data_validation_tests.ipynb
+    ├── 98_export_sample_data.ipynb
+    └── 99_cleanup_silver_rt.ipynb
 
 README.md                # This file
 ```
@@ -47,26 +57,53 @@ README.md                # This file
 
 ## Pipeline Architecture
 ```
-            ┌─────────────────────┐
-            │  GTFS-Static (once) │◄────────────┐
-            └─────────────────────┘             │
-                       ▼                        │
-     ┌────────────────────────────┐             │
-     │  Real-Time GTFS Feed (RT)  │             │
-     └────────────────────────────┘             │
-                       ▼                        │
-        ┌────────────────────────────┐          │
-        │  Bronze → Silver → Gold    │◄───┐     │
-        │  (Delta Lake Transform)    │    │     │
-        └────────────────────────────┘    │     │
-                       ▼                  │     │
-              ┌────────────────┐          │     │
-              │ NOAA Hourly API│──────────┘     │
-              └────────────────┘                │
-                       ▼                        │
-                ┌──────────────┐                │
-                │ Final Join   │◄───────────────┘
-                └──────────────┘
+                                   ┌──────────────────────────┐
+                                   │   97  Data Validation    │
+                                   │   96  One-time Dedupe    │
+                                   │   99  Cleanup (1970s…)   │
+                                   └─────────────┬────────────┘
+                                                 │   (runs across Silver/Gold)
+Sources                                          │
+========                                         │
+┌──────────────────────────────┐   ┌──────────────────────────┐   ┌──────────────────────────┐
+│ GTFS Static (routes/stops/   │   │  GTFS-RT Vehicle Feed    │   │   NOAA / NWS Hourly API  │
+│ trips, SCD2 over time)       │   │                          │   │                          │
+│ (01)                         │   │ (02)                     │   │ (05)                     │
+└───────────────┬──────────────┘   └──────────────┬───────────┘   └──────────────┬───────────┘
+                │                                 │                               │
+                ▼                                 ▼                               ▼
+          Bronze / gtfs_static              Bronze / gtfs_rt                 Bronze / weather
+                     (Delta)                        (Delta)                         (Delta)
+                     │                                │                               │
+             (10)    │                        (03)    │                        (06)  │
+                     ▼                                ▼                               ▼
+          Silver / gtfs_static                Silver / gtfs_rt                Silver / weather
+                     │                                │                               │
+                     │                                │                               │
+     ┌───────────────┴───────────────┐                │                               │
+     │   Used to ENRICH RT in Gold   │ <──────────────┘                               │
+     │          (04 notebook)        │                                                │
+     └───────────────┬───────────────┘                                                │
+                     ▼                                                                │
+            Gold / gtfs_rt_enriched  (04)                                             │
+                     │                                                                │
+                     │                    Join RT (Gold) to Weather (Silver)          │
+                     └───────────────────────────────►  (07)  ◄───────────────────────┘
+                                                       Gold / gtfs_rt_weather_joined
+                                                                    │
+                                                                    │ (14)
+                                                                    ▼
+                                                     Platinum / fact_transit_event
+                                                       (joins to dims with SKs)
+
+                 Platinum Dimensions (built biweekly)  (13)
+                 ┌──────────────────────────────┐     (from **Bronze/SCD2** static)
+                 │  Platinum / dim_route        │◄─────────┐
+                 └──────────────────────────────┘          │
+                 ┌──────────────────────────────┐          │
+                 │  Platinum / dim_trip         │◄─────────┘
+                 └──────────────────────────────┘
+
 ```
 
 ---
@@ -86,14 +123,14 @@ Handled in:
 - `05_ingest_nws_weather.ipynb`
 
 Paths:
-- **GTFS Static**: `/bronze/gtfs_static/<date>` — Raw GTFS files (`routes`, `stops`, `trips`)
-- **GTFS Real-Time**: `/bronze/gtfs_rt/<date>` — Real-time vehicle position updates
-- **Weather**: `/bronze/weather/<date>` — NOAA hourly forecast snapshots
+- **GTFS Static**: `/bronze/gtfs_static` — Raw GTFS files (`routes`, `stops`, `trips`)
+- **GTFS Real-Time**: `/bronze/gtfs_rt` — Real-time vehicle positions
+- **Weather**: `/bronze/weather` — NOAA hourly forecast snapshots
 
 ---
 
 ### Silver Layer: Cleaned and Transformed Data
-**Purpose**: Applies schema validation, type casting, filtering, and basic enrichments.
+**Purpose**: Applies schema validation, type casting, filtering, enrichments, and deduplication.
 
 Handled in:
 - `03_transform_gtfs_rt.ipynb`
@@ -101,7 +138,7 @@ Handled in:
 - `10_transform_gtfs_static.ipynb`
 
 Paths:
-- **GTFS Static**: `/silver/gtfs_static/<date>` — Combines lat/lon, adds `ingestion_ts`
+- **GTFS Static**: `/silver/gtfs_static` — Combines lat/lon, adds `ingestion_ts`
 - **GTFS Real-Time**: `/silver/gtfs_rt` — Adds `event_date`, filters nulls, formats timestamps
 - **Weather**: `/silver/weather` — Drops nulls, filters unrealistic values, adds `ingestion_date`
 
@@ -123,24 +160,46 @@ This tier powers:
 - Analytics and insight generation
 - Statistical tests or ML tasks
 
+---
+
+### Platinum Layer – Star Schema for BI
+Optimized for slicing/filtering in BI tools:
+- `13_platinum_static.ipynb` – Builds SCD2 dimension tables (`dim_trip`, `dim_route`) with surrogate keys
+- `14_create_platinum.ipynb` – Joins SKs into `fact_transit_event`
+
+Paths:
+- `/plat/dim_trip/`, `/plat/dim_route/`, `/plat/fact_transit_event/`
+
 Each layer is written as a Delta table and partitioned by date for performance and scalability.
 
 ---
-| From → To           | Dataset                  | Key Transformations                                                                                                         |
-| ------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
-| **Bronze → Silver** | `gtfs_static`            | Type casting (`stop_lat`, `stop_lon`), added `location` struct, added `ingestion_ts`<br>📓 `10_transform_gtfs_static.ipynb` |
-|                     | `gtfs_rt`                | Parsed timestamps (`event_ts`), added `event_date`, `ingestion_date`, validated schema<br>📓 `03_transform_gtfs_rt.ipynb`   |
-|                     | `weather`                | Removed nulls, filtered unrealistic values, added `ingestion_date`<br>📓 `06_transform_nws_weather.ipynb`                   |
-| **Silver → Gold**   | `gtfs_rt_enriched`       | Joined with static `routes` and `trips` for metadata enrichment<br>📓 `04_enrich_rt_with_static.ipynb`                      |
-|                     | `gtfs_rt_weather_joined` | Matched real-time events with closest hourly weather snapshot using timestamp logic<br>📓 `07_join_rt_with_weather.ipynb`   |
 
-
-
----
 ## Automation & Scheduling
 
 - Daily automated runs are scheduled using **Databricks Workflows**, ensuring up-to-date data ingestion, processing, and dashboard refresh every morning at 8:00 AM.
 - Task dependencies are defined to preserve logical notebook execution order (e.g., static before enrichment, weather before joins).
+
+### Daily Pipeline (8:00 AM)
+Runs Notebooks:
+- `02`, `03`, `05`, `06`, `04`, `07`, `97`, `14`
+- Ingests real-time GTFS and weather
+- Refreshes Databricks Dashboards by **8:30 AM**
+
+### Biweekly Pipeline (Every 15 Days)
+Runs Notebooks:
+- `01`, `13`, `10`
+- Updates SCD2-based static GTFS and rebuilds Platinum dimensions and fact table
+
+---
+
+## Data Validation & Cleanup
+
+- `97_data_validation_tests.ipynb`  
+  - Checks for nulls, timestamp logic, temperature bounds, and uniqueness
+- `99_cleanup_silver_rt.ipynb`  
+  - Removes records with `event_date = '1970-01-01'` or missing weather timestamps
+- `96_one_time_dedupe.ipynb`  
+  - Drops duplicates in historical Bronze, Silver, and Gold tables
 
 ---
 
@@ -158,18 +217,17 @@ Key insights extracted and visualized via Databricks Dashboards:
 ---
 
 ## Sample Data
-View sample outputs from the Silver tables in the `data/` folder to get a sense of the structured outputs:
-- GTFS vehicle update rows
-- Weather snapshots with temperature, conditions, wind
-- Static stop locations and metadata
+View sample outputs from all the tables in the `data/` folder to get a sense of the structured outputs.
 
 ---
 
 ## Key Takeaways
-- Fully automated ingestion and transformation workflow
-- Uses partitioned Delta tables with versioned layers (Bronze → Silver → Gold)
-- Scheduled dashboards update daily at 8:30 AM
-- Modular notebooks with clear documentation and visual storytelling
+
+- Medallion architecture: Bronze → Silver → Gold → Platinum
+- Automated ingestion, transformation, and dashboard refresh
+- SCD2 dimensional modeling with surrogate keys
+- Built-in data validation and cleanup notebooks
+- Production-style pipelines with partitioned Delta tables
 
 ---
 
@@ -188,7 +246,3 @@ Seattle, WA
 [LinkedIn](https://www.linkedin.com/in/elham-afruzi/)  |  [GitHub](https://github.com/El-ham)
 
 ---
-
-
-
-# TO DO
