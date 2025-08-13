@@ -18,6 +18,7 @@ This project ingests real-time and static GTFS transit feeds and enriches them w
 - **GTFS Feeds** (King County Metro)
 - **Databricks Dashboards** for visual exploration
 - **GitHub** for version control and documentation
+- **Pandas, Seaborn, Matplotlib, SciPy, scikit-learn, XGBoost** for analytics and ML
 
 ---
 
@@ -43,6 +44,8 @@ This project ingests real-time and static GTFS transit feeds and enriches them w
     ├── 06_transform_nws_weather.ipynb
     ├── 07_join_rt_with_weather.ipynb
     ├── 10_transform_gtfs_static.ipynb
+    ├── 11_statistical_analysis.ipynb     
+    ├── 12_predict_transit_volume.ipynb   
     ├── 13_platinum_static.ipynb
     ├── 14_create_platinum.ipynb
     ├── 96_one_time_dedupe.ipynb
@@ -56,43 +59,48 @@ README.md                # This file
 ---
 
 ## Pipeline Architecture
+
 ```
-                                   ┌──────────────────────────┐
-                                   │   97  Data Validation    │
-                                   │   96  One-time Dedupe    │
-                                   │   99  Cleanup (1970s…)   │
-                                   └─────────────┬────────────┘
-                                                 │   (runs across Silver/Gold)
-Sources                                          │
-========                                         │
+Sources
+========
 ┌──────────────────────────────┐   ┌──────────────────────────┐   ┌──────────────────────────┐
 │ GTFS Static (routes/stops/   │   │  GTFS-RT Vehicle Feed    │   │   NOAA / NWS Hourly API  │
-│ trips, SCD2 over time)       │   │                          │   │                          │
-│ (01)                         │   │ (02)                     │   │ (05)                     │
+│ trips, SCD2 over time) (01)  │   │ (02)                     │   │ (05)                     │
 └───────────────┬──────────────┘   └──────────────┬───────────┘   └──────────────┬───────────┘
-                │                                 │                               │
-                ▼                                 ▼                               ▼
-          Bronze / gtfs_static              Bronze / gtfs_rt                 Bronze / weather
-                     (Delta)                        (Delta)                         (Delta)
-                     │                                │                               │
+                │                                 │                              │
+                ▼                                 ▼                              ▼
+          Bronze / gtfs_static              Bronze / gtfs_rt               Bronze / weather
+                     (Delta)                        (Delta)                       (Delta)
+                     │                                │                              │
              (10)    │                        (03)    │                        (06)  │
-                     ▼                                ▼                               ▼
+                     ▼                                ▼                              ▼
           Silver / gtfs_static                Silver / gtfs_rt                Silver / weather
-                     │                                │                               │
-                     │                                │                               │
-     ┌───────────────┴───────────────┐                │                               │
-     │   Used to ENRICH RT in Gold   │ <──────────────┘                               │
-     │          (04 notebook)        │                                                │
-     └───────────────┬───────────────┘                                                │
-                     ▼                                                                │
-            Gold / gtfs_rt_enriched  (04)                                             │
-                     │                                                                │
-                     │                    Join RT (Gold) to Weather (Silver)          │
-                     └───────────────────────────────►  (07)  ◄───────────────────────┘
+                     │                                │                              │
+                     │                                │                              │
+     ┌───────────────┴───────────────┐                │                              │
+     │   Used to ENRICH RT in Gold   │ <──────────────┘                              │
+     │          (04 notebook)        │                                               │
+     └───────────────┬───────────────┘                                               │
+                     ▼                                                               │
+            Gold / gtfs_rt_enriched  (04)                                            │
+                     │                                                               │
+                     │                    Join RT (Gold) to Weather (Silver)         │
+                     └───────────────────────────────►  (07)  ◄──────────────────────┘
                                                        Gold / gtfs_rt_weather_joined
                                                                     │
-                                                                    │ (14)
-                                                                    ▼
+            ┌───────────────────────────────────────────────────────│
+            │                                                       │
+            │            ┌──────────────────────────────────────────┴──────────────────────────────────────────┐
+            │            │                                                                                     │
+            │            │     Analytics & ML (consume Gold)                                                   │
+            │            │     ────────────────────────────────────────────────────────────────────────────    │
+            │            │     (11) Statistical Analysis  ──►  /analytics/ (summaries, charts, test results)   │
+            │            │     (12) ML Prediction         ──►  /models/, /predictions/ (e.g., daily forecasts) │
+            │            │                                                                                     │
+            │            └─────────────────────────────────────────────────────────────────────────────────────┘
+            │                                                       
+            │
+            └───────────────────────────────────────────────────► (14)  
                                                      Platinum / fact_transit_event
                                                        (joins to dims with SKs)
 
@@ -104,11 +112,23 @@ Sources                                          │
                  │  Platinum / dim_trip         │◄─────────┘
                  └──────────────────────────────┘
 
+                                           BI Consumers
+                                           ─────────────
+                                           • Databricks SQL Dashboards
+                                           • Power BI (reads Platinum via Unity Catalog)
+
+                                    ┌──────────────────────────────────────────────────────┐
+                                    │              Guardrails (cross-cutting)              │
+                                    │  (96) One-time Dedupe  •  (97) Data Validation       │
+                                    │  (99) Cleanup (e.g., 1970-01-01)                     │
+                                    │  Applied to: Bronze | Silver | Gold | Platinum       │
+                                    └──────────────────────────────────────────────────────┘
+
 ```
 
 ---
 
-## Data Lake Architecture: Bronze, Silver, and Gold Layers
+## Data Lake Architecture: Bronze, Silver, Gold, and Platinum Layers
 
 This project follows the **medallion architecture pattern** to structure raw, cleaned, and enriched data for analytics and ML.
 
@@ -174,6 +194,51 @@ Each layer is written as a Delta table and partitioned by date for performance a
 
 ---
 
+## Additional Analytics & Modeling
+`11_statistical_analysis.ipynb` – Statistical Analysis of Seattle Transit Activity vs Weather
+Goal: Identify patterns and relationships between transit activity and weather variables.
+
+Data: Gold-layer table gtfs_rt_weather_joined.
+
+### Key Analyses:
+
+Correlation tests (Pearson & Spearman) between average temperature and daily vehicle updates.
+
+Weekday vs weekend comparison using t-tests.
+
+Visualization of trends using Seaborn and Matplotlib.
+
+### Insights:
+
+Found weak positive correlations between temperature and vehicle update counts (not statistically significant).
+
+Strong, statistically significant difference between weekday and weekend activity levels.
+
+`12_predict_transit_volume.ipynb` – Machine Learning Prediction of Transit Volume
+Goal: Predict daily transit volume using weather and time-based features.
+
+Data: Gold-layer table gtfs_rt_weather_joined (aggregated to daily level).
+
+### Approach:
+
+Feature engineering: Extract day of week, clean wind speed, one-hot encode weather conditions.
+
+Models compared: Linear Regression, Random Forest, XGBoost.
+
+### Results:
+
+Random Forest achieved R² = 0.95; XGBoost achieved R² = 0.97.
+
+Most important predictor: day_of_week, followed by wind_speed and certain weather condition categories.
+
+### Use Cases:
+
+Forecasting peak days for transit service demand.
+
+Supporting operational decision-making under varying weather conditions.
+
+---
+
 ## Automation & Scheduling
 
 - Daily automated runs are scheduled using **Databricks Workflows**, ensuring up-to-date data ingestion, processing, and dashboard refresh every morning at 8:00 AM.
@@ -190,6 +255,11 @@ Runs Notebooks:
 - `01`, `13`, `10`
 - Updates SCD2-based static GTFS and rebuilds Platinum dimensions and fact table
 
+### Biweekly Pipeline (Every 2 weeks)
+Runs Notebooks:
+- `11`, `12`
+- Updates statistical analysis and ML models
+
 ---
 
 ## Data Validation & Cleanup
@@ -204,7 +274,8 @@ Runs Notebooks:
 ---
 
 ## Dashboards & Visual Insights
-Key insights extracted and visualized via Databricks Dashboards:
+
+### Databricks Dashboard:
 
 - **Vehicle Updates by Day**: Understand how daily transit activity varies
 - **Temperature vs Transit**: Correlate cold/warm days with usage patterns
@@ -212,7 +283,15 @@ Key insights extracted and visualized via Databricks Dashboards:
 - **Hourly Activity**: Peak hours for vehicle location updates
 - **Weather Condition Trends**: Most common forecast types
 
-📷 PNG samples are included in the `dashboards/` folder.
+PNG samples are included in the `dashboards/` folder.
+
+### Power BI
+
+In addition to Databricks dashboards, selected insights were recreated in Power BI to demonstrate proficiency with external BI tools.  
+Data was accessed from the Unity Catalog in Databricks, using the Platinum fact table and three related dimension tables in a star schema (1-to-many relationships).  
+
+Two visuals — *Daily Transit Activity and Average Temperature* and *Most Common Weather Conditions* — were combined into a single screenshot for presentation.  
+The Power BI `.pbix` file and the screenshot are stored in the `dashboards/Power_BI` folder for reference and reproducibility.
 
 ---
 
